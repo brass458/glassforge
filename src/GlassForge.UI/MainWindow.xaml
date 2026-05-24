@@ -48,6 +48,13 @@
                       FontSize="12" Padding="6,4"
                       Background="#2D2D2D" Foreground="#CCCCCC"
                       BorderBrush="#444444">
+                <ComboBox.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#2D2D2D"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#CCCCCC"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#3D5A80"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#2D2D2D"/>
+                </ComboBox.Resources>
                 <ComboBoxItem Content="Acrylic" Tag="Acrylic"/>
                 <ComboBoxItem Content="Blur" Tag="Blur"/>
                 <ComboBoxItem Content="None" Tag="None"/>
