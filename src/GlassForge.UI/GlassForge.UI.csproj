@@ -19,9 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\assets\glassforge.ico"
-             Link="assets\glassforge.ico"
-             CopyToOutputDirectory="PreserveNewest"/>
+    <Resource Include="..\..\assets\glassforge.ico"
+              Link="assets\glassforge.ico"/>
   </ItemGroup>
 
 </Project>
