@@ -3,6 +3,7 @@ namespace GlassForge.UI;
 using System.Windows;
 using GlassForge.Core.Settings;
 using GlassForge.Shell;
+using GlassForge.Shell.Abstractions;
 using GlassForge.UI.Tray;
 
 public partial class App : Application
@@ -10,46 +11,55 @@ public partial class App : Application
     private UbrWatcher? _ubrWatcher;
     private TrayManager? _trayManager;
     private CapabilityMap? _capabilityMap;
+    private TaskbarEffectService? _taskbarEffectService;
+    private IShellBackend? _currentBackend;
+    private AppSettings? _currentSettings;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        // 1. Detect Windows build + UBR
         var (build, ubr) = WindowsBuildDetector.Detect();
-
-        // 2. Select backend for this build
-        var backend = ShellBackendFactory.Create(build);
-
-        // 3. Probe capabilities (all-false in v0.1.0)
+        _currentBackend = ShellBackendFactory.Create(build);
         _capabilityMap = new CapabilityMap();
-        _capabilityMap.Probe(backend);
+        _capabilityMap.Probe(_currentBackend);
+        DiagnosticsWriter.Write(build, ubr, _currentBackend.Name, _capabilityMap.Current);
 
-        // 4. Write diagnostics snapshot
-        DiagnosticsWriter.Write(build, ubr, backend.Name, _capabilityMap.Current);
-
-        // 5. Watch for Windows Update (UBR change)
         _ubrWatcher = new UbrWatcher();
         _ubrWatcher.UbrChanged += newUbr =>
         {
             var (newBuild, _) = WindowsBuildDetector.Detect();
-            var newBackend = ShellBackendFactory.Create(newBuild);
-            _capabilityMap.Probe(newBackend);
-            DiagnosticsWriter.Write(newBuild, newUbr, newBackend.Name, _capabilityMap.Current);
+            _currentBackend = ShellBackendFactory.Create(newBuild);
+            _capabilityMap.Probe(_currentBackend);
+            DiagnosticsWriter.Write(newBuild, newUbr, _currentBackend.Name, _capabilityMap.Current);
+            if (_currentSettings != null)
+                _taskbarEffectService?.Apply(_currentBackend, _currentSettings);
         };
         _ubrWatcher.Start();
 
-        // 6. Load settings
         var settingsService = new SettingsService();
-        var settings = settingsService.Load();
+        _currentSettings = settingsService.Load();
+        _taskbarEffectService = new TaskbarEffectService();
 
-        // 7. Initialize headless tray host
-        _trayManager = new TrayManager(settings, _capabilityMap);
-        _trayManager.Initialize();
+        Action<AppSettings> onSettingsChanged = settings =>
+        {
+            _currentSettings = settings;
+            settingsService.Save(settings);
+            if (_currentBackend != null)
+                _taskbarEffectService.Apply(_currentBackend, settings);
+        };
+
+        _trayManager = new TrayManager(_currentSettings, _capabilityMap);
+        _trayManager.Initialize(onSettingsChanged);
+
+        if (_currentSettings.TaskbarEffectEnabled)
+            _taskbarEffectService.Apply(_currentBackend, _currentSettings);
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (_currentBackend != null)
+            _taskbarEffectService?.Remove(_currentBackend);
         _ubrWatcher?.Dispose();
         _trayManager?.Dispose();
         base.OnExit(e);

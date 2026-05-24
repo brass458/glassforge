@@ -13,6 +13,7 @@ public class TrayManager : IDisposable
     private MainWindow? _window;
     private readonly AppSettings _settings;
     private readonly CapabilityMap _capabilityMap;
+    private Action<AppSettings>? _onSettingsChanged;
 
     public TrayManager(AppSettings settings, CapabilityMap capabilityMap)
     {
@@ -20,11 +21,18 @@ public class TrayManager : IDisposable
         _capabilityMap = capabilityMap;
     }
 
-    public void Initialize()
+    public void Initialize(Action<AppSettings> onSettingsChanged)
     {
+        _onSettingsChanged = onSettingsChanged;
+
+        Icon trayIcon;
+        var stream = Application.GetResourceStream(
+            new Uri("pack://application:,,,/assets/glassforge.ico"))?.Stream;
+        trayIcon = stream != null ? new Icon(stream) : SystemIcons.Application;
+
         _taskbarIcon = new TaskbarIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = trayIcon,
             ToolTipText = "GlassForge"
         };
         _taskbarIcon.TrayLeftMouseDown += (_, _) => OpenSettings();
@@ -49,7 +57,7 @@ public class TrayManager : IDisposable
     {
         if (_window == null)
         {
-            _window = new MainWindow(_settings, _capabilityMap);
+            _window = new MainWindow(_settings, _capabilityMap, _onSettingsChanged!);
             _window.Closed += (_, _) => _window = null;
             _window.Show();
         }
