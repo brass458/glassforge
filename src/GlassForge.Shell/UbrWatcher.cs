@@ -1,87 +1,89 @@
-using Microsoft.Win32;
-
 namespace GlassForge.Shell;
 
-/// <summary>
-/// Watches HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\UBR for changes.
-/// When Windows Update increments the UBR (Update Build Revision), the watcher
-/// raises <see cref="BuildRevisionChanged"/> so GlassForge can re-probe capabilities
-/// and reload the remote compat manifest.
-/// </summary>
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
+
 public sealed class UbrWatcher : IDisposable
 {
-    private const string KeyPath = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion";
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern int RegNotifyChangeKeyValue(
+        IntPtr hKey,
+        bool bWatchSubtree,
+        uint dwNotifyFilter,
+        IntPtr hEvent,
+        bool fAsynchronous);
 
+    private const uint REG_NOTIFY_CHANGE_LAST_SET = 0x00000004;
+
+    public event Action<int>? UbrChanged;
+
+    private readonly Func<int> _readUbr;
+    private int _cachedUbr;
     private RegistryKey? _key;
-    private Thread?      _thread;
+    private AutoResetEvent? _waitHandle;
+    private RegisteredWaitHandle? _registeredWait;
     private volatile bool _disposed;
-    private int _lastKnownUbr;
 
-    /// <summary>Raised on the watcher thread when the UBR value changes.</summary>
-    public event EventHandler<UbrChangedEventArgs>? BuildRevisionChanged;
-
-    public UbrWatcher()
+    public UbrWatcher(Func<int>? readUbr = null)
     {
-        _lastKnownUbr = WindowsBuildDetector.GetUpdateBuildRevision();
+        _readUbr = readUbr ?? ReadUbrFromRegistry;
     }
 
-    /// <summary>Starts watching. Safe to call multiple times; only one thread runs.</summary>
     public void Start()
     {
-        if (_thread is not null || _disposed) return;
-
-        _key = Registry.LocalMachine.OpenSubKey(KeyPath, writable: false);
-        if (_key is null) return; // can't watch — graceful no-op
-
-        _thread = new Thread(WatchLoop)
-        {
-            IsBackground = true,
-            Name         = "GlassForge.UbrWatcher",
-        };
-        _thread.Start();
+        _cachedUbr = _readUbr();
+        _key = Registry.LocalMachine.OpenSubKey(
+            @"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+        _waitHandle = new AutoResetEvent(false);
+        RegisterNotification();
+        ScheduleWait();
     }
 
-    private void WatchLoop()
+    private void RegisterNotification()
     {
-        while (!_disposed && _key is not null)
+        if (_key == null || _waitHandle == null || _disposed) return;
+        RegNotifyChangeKeyValue(
+            _key.Handle.DangerousGetHandle(),
+            false,
+            REG_NOTIFY_CHANGE_LAST_SET,
+            _waitHandle.SafeWaitHandle.DangerousGetHandle(),
+            true);
+    }
+
+    private void ScheduleWait()
+    {
+        _registeredWait = ThreadPool.RegisterWaitForSingleObject(
+            _waitHandle!, OnRegistryChanged, null, Timeout.Infinite, executeOnlyOnce: true);
+    }
+
+    private void OnRegistryChanged(object? state, bool timedOut)
+    {
+        if (_disposed) return;
+        var newUbr = _readUbr();
+        if (newUbr != _cachedUbr)
         {
-            try
-            {
-                // Block until the registry key changes (or the handle is closed)
-                NativeRegNotify.WaitForChange(_key);
-
-                if (_disposed) break;
-
-                var newUbr = WindowsBuildDetector.GetUpdateBuildRevision();
-                if (newUbr != _lastKnownUbr)
-                {
-                    var args = new UbrChangedEventArgs(_lastKnownUbr, newUbr);
-                    _lastKnownUbr = newUbr;
-                    BuildRevisionChanged?.Invoke(this, args);
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                break;
-            }
-            catch
-            {
-                // If the wait fails, back off briefly and retry rather than tight-looping
-                Thread.Sleep(TimeSpan.FromMinutes(1));
-            }
+            _cachedUbr = newUbr;
+            UbrChanged?.Invoke(newUbr);
         }
+        if (!_disposed)
+        {
+            RegisterNotification();
+            ScheduleWait();
+        }
+    }
+
+    private static int ReadUbrFromRegistry()
+    {
+        using var key = Registry.LocalMachine.OpenSubKey(
+            @"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+        return (int)(key?.GetValue("UBR") ?? 0);
     }
 
     public void Dispose()
     {
         _disposed = true;
+        _registeredWait?.Unregister(_waitHandle);
+        _waitHandle?.Dispose();
         _key?.Dispose();
-        _key = null;
     }
-}
-
-public sealed class UbrChangedEventArgs(int previousUbr, int newUbr) : EventArgs
-{
-    public int PreviousUbr { get; } = previousUbr;
-    public int NewUbr      { get; } = newUbr;
 }

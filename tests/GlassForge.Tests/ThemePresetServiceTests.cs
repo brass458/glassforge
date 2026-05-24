@@ -1,90 +1,58 @@
-using GlassForge.Core.Settings;
-using GlassForge.Core.Themes;
-
 namespace GlassForge.Tests;
 
-/// <summary>Task 10 — ThemePresetService tests</summary>
-public class ThemePresetServiceTests
+using GlassForge.Core.Models;
+using GlassForge.Core.Themes;
+
+public class ThemePresetServiceTests : IDisposable
 {
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+    private ThemePresetService MakeService() => new(_dir);
+
+    public ThemePresetServiceTests() => Directory.CreateDirectory(_dir);
+    public void Dispose() => Directory.Delete(_dir, recursive: true);
+
     [Fact]
-    public void BuiltInPresets_NotEmpty()
+    public void GetCustomPresets_ReturnsEmpty_WhenFileMissing()
     {
-        var svc = new ThemePresetService();
-        Assert.NotEmpty(svc.AllPresets);
+        var svc = MakeService();
+        Assert.Empty(svc.GetCustomPresets());
     }
 
     [Fact]
-    public void AllPresets_ContainsGlassForgeDefault()
+    public void SaveAndLoad_RoundTrip()
     {
-        var svc = new ThemePresetService();
-        Assert.Contains(svc.AllPresets, p => p.Id == "glassforge-default");
+        var svc = MakeService();
+        var preset = new ThemePreset { Name = "My Theme", AccentColorHex = "#FF0000" };
+        svc.SaveCustomPreset(preset);
+
+        var svc2 = MakeService();
+        var loaded = svc2.GetCustomPresets();
+        Assert.Single(loaded);
+        Assert.Equal("My Theme", loaded[0].Name);
+        Assert.Equal("#FF0000", loaded[0].AccentColorHex);
     }
 
     [Fact]
-    public void AllPresets_Contains19BuiltIns()
+    public void Delete_RemovesPreset()
     {
-        // 19 presets ported from Nexus (glassforge-default replaces nexus-default)
-        var svc    = new ThemePresetService();
-        var builtIn = svc.AllPresets.Where(p => p.IsBuiltIn).ToList();
-        Assert.Equal(19, builtIn.Count);
+        var svc = MakeService();
+        svc.SaveCustomPreset(new ThemePreset { Name = "ToDelete" });
+        svc.DeleteCustomPreset("ToDelete");
+
+        var svc2 = MakeService();
+        Assert.Empty(svc2.GetCustomPresets());
     }
 
     [Fact]
-    public void AllPresets_HaveUniqueIds()
+    public void Save_UpdatesExistingPresetWithSameName()
     {
-        var svc = new ThemePresetService();
-        var ids = svc.AllPresets.Select(p => p.Id).ToList();
-        Assert.Equal(ids.Count, ids.Distinct().Count());
-    }
+        var svc = MakeService();
+        svc.SaveCustomPreset(new ThemePreset { Name = "UpdateMe", AccentColorHex = "#111111" });
+        svc.SaveCustomPreset(new ThemePreset { Name = "UpdateMe", AccentColorHex = "#222222" });
 
-    [Fact]
-    public void AllPresets_HaveNonEmptyNames()
-    {
-        var svc = new ThemePresetService();
-        Assert.All(svc.AllPresets, p => Assert.False(string.IsNullOrWhiteSpace(p.Name)));
-    }
-
-    [Fact]
-    public void AllPresets_GlassOpacity_InRange()
-    {
-        var svc = new ThemePresetService();
-        Assert.All(svc.AllPresets, p =>
-        {
-            Assert.True(p.GlassOpacity >= 0.0 && p.GlassOpacity <= 1.0,
-                        $"Preset '{p.Id}' has GlassOpacity={p.GlassOpacity} out of [0,1]");
-        });
-    }
-
-    [Fact]
-    public void AllPresets_ValidThemeModes()
-    {
-        var valid = new[] { "Dark", "Light", "System" };
-        var svc   = new ThemePresetService();
-        Assert.All(svc.AllPresets, p =>
-            Assert.Contains(p.ThemeMode, valid));
-    }
-
-    [Fact]
-    public void SurfaceSwatchPalettes_ReturnsNonEmpty_ForKnownPreset()
-    {
-        var palette = SurfaceSwatchPalettes.GetPalette("neon", isDark: true);
-        Assert.NotEmpty(palette);
-        Assert.Equal(8, palette.Length);
-    }
-
-    [Fact]
-    public void SurfaceSwatchPalettes_ReturnsDarkDefault_ForUnknownPreset()
-    {
-        var palette = SurfaceSwatchPalettes.GetPalette("unknown-preset-xyz", isDark: true);
-        Assert.NotEmpty(palette);
-    }
-
-    [Fact]
-    public void SurfaceSwatchPalettes_ReturnsLightDefault_ForUnknownPreset()
-    {
-        var dark  = SurfaceSwatchPalettes.GetPalette("", isDark: true);
-        var light = SurfaceSwatchPalettes.GetPalette("", isDark: false);
-        // Should be different palettes
-        Assert.NotEqual(dark[0].Hex, light[0].Hex);
+        var svc2 = MakeService();
+        var loaded = svc2.GetCustomPresets();
+        Assert.Single(loaded);
+        Assert.Equal("#222222", loaded[0].AccentColorHex);
     }
 }

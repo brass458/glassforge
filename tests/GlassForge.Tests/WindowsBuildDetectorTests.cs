@@ -1,37 +1,34 @@
-using GlassForge.Shell;
-
 namespace GlassForge.Tests;
 
-/// <summary>Task 4 — WindowsBuildDetector TDD</summary>
+using GlassForge.Shell;
+
 public class WindowsBuildDetectorTests
 {
     [Fact]
-    public void GetBuildNumber_ReturnsPositiveValue()
+    public void Detect_WithTestProbe_ReturnsProbedBuild()
     {
-        var build = WindowsBuildDetector.GetBuildNumber();
-        Assert.True(build > 0, $"Expected positive build number, got {build}");
+        var (build, _) = WindowsBuildDetector.Detect(() => (22631, 4169));
+        Assert.Equal(22631, build);
     }
 
     [Fact]
-    public void GetBuildNumber_ReturnsAtLeastWindows10()
+    public void Detect_WithTestProbe_ReturnsProbedUbr()
     {
-        // Windows 10 first build = 10240
-        var build = WindowsBuildDetector.GetBuildNumber();
-        Assert.True(build >= 10240, $"Build {build} is below Windows 10 minimum (10240)");
+        var (_, ubr) = WindowsBuildDetector.Detect(() => (22631, 4169));
+        Assert.Equal(4169, ubr);
     }
 
     [Fact]
-    public void GetBuildNumber_IsCached_ReturnsSameValueOnRepeatCalls()
+    public void Detect_WithNullProbe_ReturnsBuildAboveZero()
     {
-        var first  = WindowsBuildDetector.GetBuildNumber();
-        var second = WindowsBuildDetector.GetBuildNumber();
-        Assert.Equal(first, second);
+        var (build, _) = WindowsBuildDetector.Detect();
+        Assert.True(build > 0, $"Expected build > 0, got {build}");
     }
 
     [Fact]
-    public void GetUpdateBuildRevision_ReturnsNonNegativeValue()
+    public void Detect_WithNullProbe_ReturnsUbrAtLeastZero()
     {
-        var ubr = WindowsBuildDetector.GetUpdateBuildRevision();
-        Assert.True(ubr >= 0, $"UBR should be >= 0, got {ubr}");
+        var (_, ubr) = WindowsBuildDetector.Detect();
+        Assert.True(ubr >= 0, $"Expected ubr >= 0, got {ubr}");
     }
 }

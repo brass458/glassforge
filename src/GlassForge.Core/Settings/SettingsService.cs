@@ -1,83 +1,44 @@
-using System.Text.Json;
-
 namespace GlassForge.Core.Settings;
 
-/// <summary>
-/// Loads and saves <see cref="AppSettings"/> to %APPDATA%\GlassForge\settings.json.
-/// Thread-safe for concurrent reads; writes are serialized via a lock.
-/// </summary>
+using System.Text.Json;
+
 public class SettingsService
 {
-    private static readonly string _defaultPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "GlassForge", "settings.json");
+    private readonly string _directory;
+    private string ConfigPath => Path.Combine(_directory, "config.json");
+    private string TempPath => Path.Combine(_directory, "config.tmp");
 
-    private static readonly JsonSerializerOptions _json = new() { WriteIndented = true };
-
-    private readonly object _lock = new();
-    private readonly string _path;
-    private AppSettings _current;
-
-    public SettingsService() : this(_defaultPath) { }
-
-    protected SettingsService(string filePath)
+    public SettingsService(string? directory = null)
     {
-        _path    = filePath;
-        _current = Load();
+        _directory = directory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "GlassForge");
     }
 
-    /// <summary>A snapshot of the current settings (not a live reference).</summary>
-    public AppSettings Current
-    {
-        get { lock (_lock) return _current; }
-    }
-
-    /// <summary>Replaces the in-memory settings and persists them to disk.</summary>
-    public void Save(AppSettings settings)
-    {
-        lock (_lock)
-        {
-            _current = settings;
-            Persist(settings);
-        }
-    }
-
-    /// <summary>Applies an in-place mutation and saves.</summary>
-    public void Update(Action<AppSettings> mutate)
-    {
-        lock (_lock)
-        {
-            mutate(_current);
-            Persist(_current);
-        }
-    }
-
-    private AppSettings Load()
+    public AppSettings Load()
     {
         try
         {
-            if (!File.Exists(_path)) return new AppSettings();
-            var json = File.ReadAllText(_path);
-            return JsonSerializer.Deserialize<AppSettings>(json, _json) ?? new AppSettings();
+            if (!File.Exists(ConfigPath)) return new AppSettings();
+            var json = File.ReadAllText(ConfigPath);
+            return JsonSerializer.Deserialize<AppSettings>(json,
+                       new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                   ?? new AppSettings();
         }
-        catch
+        catch (JsonException)
         {
             return new AppSettings();
         }
     }
 
-    private void Persist(AppSettings settings)
+    public void Save(AppSettings settings)
     {
-        try
-        {
-            var dir = Path.GetDirectoryName(_path);
-            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-            var json = JsonSerializer.Serialize(settings, _json);
-            // Atomic write via temp file + replace
-            var tmp = _path + ".tmp";
-            File.WriteAllText(tmp, json);
-            File.Move(tmp, _path, overwrite: true);
-        }
-        catch { /* best-effort */ }
+        Directory.CreateDirectory(_directory);
+        var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(TempPath, json);
+        if (File.Exists(ConfigPath))
+            File.Replace(TempPath, ConfigPath, null);
+        else
+            File.Move(TempPath, ConfigPath);
     }
 }

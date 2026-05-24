@@ -1,112 +1,54 @@
-using System.Text.Json;
-using GlassForge.Core.Settings;
-
 namespace GlassForge.Tests;
 
-/// <summary>Task 11 — SettingsService TDD</summary>
+using GlassForge.Core.Settings;
+
 public class SettingsServiceTests : IDisposable
 {
-    private readonly string _tempFile;
-    private readonly SettingsServiceTestable _svc;
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+    private SettingsService MakeService() => new(_dir);
 
-    public SettingsServiceTests()
+    public SettingsServiceTests() => Directory.CreateDirectory(_dir);
+    public void Dispose() => Directory.Delete(_dir, recursive: true);
+
+    [Fact]
+    public void Load_ReturnsDefaults_WhenFileMissing()
     {
-        _tempFile = Path.Combine(Path.GetTempPath(), $"GlassForge.settings.{Guid.NewGuid()}.json");
-        _svc = new SettingsServiceTestable(_tempFile);
+        var settings = MakeService().Load();
+        Assert.Equal("Crystal Glass", settings.ActivePresetName);
+        Assert.False(settings.SmartTintEnabled);
+        Assert.Equal(0.85f, settings.TaskbarOpacity);
+        Assert.Equal("Acrylic", settings.TaskbarBackdropMode);
     }
 
     [Fact]
-    public void Current_ReturnsDefaults_WhenNoFileExists()
+    public void Load_ReturnsDefaults_WhenJsonMalformed()
     {
-        var s = _svc.Current;
-        Assert.Equal("System", s.ThemeMode);
-        Assert.Equal("#0A84FF", s.AccentColorHex);
-        Assert.True(s.MinimizeToTray);
+        File.WriteAllText(Path.Combine(_dir, "config.json"), "not valid json {{{");
+        var settings = MakeService().Load();
+        Assert.Equal("Crystal Glass", settings.ActivePresetName);
     }
 
     [Fact]
-    public void Save_PersistsToFile()
+    public void SaveAndLoad_RoundTrip()
     {
-        var updated = _svc.Current;
-        updated.ThemeMode = "Dark";
-        updated.AccentColorHex = "#FF6B9D";
-        _svc.Save(updated);
-
-        Assert.True(File.Exists(_tempFile), "settings file should exist after Save");
-        var json = File.ReadAllText(_tempFile);
-        Assert.Contains("Dark", json);
-        Assert.Contains("#FF6B9D", json);
+        var service = MakeService();
+        service.Save(new AppSettings { ActivePresetName = "Midnight Blue", TaskbarOpacity = 0.5f });
+        var loaded = service.Load();
+        Assert.Equal("Midnight Blue", loaded.ActivePresetName);
+        Assert.Equal(0.5f, loaded.TaskbarOpacity);
     }
 
     [Fact]
-    public void Load_RestoresPersistedSettings()
+    public void Save_WritesFile()
     {
-        var s = _svc.Current;
-        s.ThemeMode = "Light";
-        _svc.Save(s);
-
-        // Create a new service instance reading the same file
-        var svc2 = new SettingsServiceTestable(_tempFile);
-        Assert.Equal("Light", svc2.Current.ThemeMode);
+        MakeService().Save(new AppSettings());
+        Assert.True(File.Exists(Path.Combine(_dir, "config.json")));
     }
 
     [Fact]
-    public void Update_AppliesMutation_AndPersists()
+    public void Save_LeavesNoTempFile()
     {
-        _svc.Update(s => s.ActiveThemePresetId = "dracula");
-        Assert.Equal("dracula", _svc.Current.ActiveThemePresetId);
-        Assert.True(File.Exists(_tempFile));
+        MakeService().Save(new AppSettings());
+        Assert.False(File.Exists(Path.Combine(_dir, "config.tmp")));
     }
-
-    [Fact]
-    public void Load_ReturnsDefaults_OnCorruptFile()
-    {
-        File.WriteAllText(_tempFile, "this is not json {{{{");
-        var svc = new SettingsServiceTestable(_tempFile);
-        Assert.Equal("System", svc.Current.ThemeMode);
-    }
-
-    [Fact]
-    public void Save_IsAtomic_WritesViaTempFile()
-    {
-        // Verify the file exists and is valid JSON after save
-        var s = _svc.Current;
-        s.ThemeMode = "Dark";
-        _svc.Save(s);
-
-        var json = File.ReadAllText(_tempFile);
-        var deserialized = JsonSerializer.Deserialize<AppSettings>(json);
-        Assert.NotNull(deserialized);
-        Assert.Equal("Dark", deserialized!.ThemeMode);
-    }
-
-    [Fact]
-    public void Current_IsConcurrentlySafe()
-    {
-        var errors = new System.Collections.Concurrent.ConcurrentBag<Exception>();
-        var threads = Enumerable.Range(0, 8).Select(i => new Thread(() =>
-        {
-            try
-            {
-                _svc.Update(s => s.ThemeMode = i % 2 == 0 ? "Dark" : "Light");
-                _ = _svc.Current.ThemeMode;
-            }
-            catch (Exception ex) { errors.Add(ex); }
-        })).ToList();
-
-        threads.ForEach(t => t.Start());
-        threads.ForEach(t => t.Join(TimeSpan.FromSeconds(5)));
-        Assert.Empty(errors);
-    }
-
-    public void Dispose()
-    {
-        try { File.Delete(_tempFile); } catch { }
-        try { File.Delete(_tempFile + ".tmp"); } catch { }
-    }
-}
-
-internal sealed class SettingsServiceTestable : SettingsService
-{
-    public SettingsServiceTestable(string filePath) : base(filePath) { }
 }

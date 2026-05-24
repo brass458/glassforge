@@ -1,61 +1,35 @@
-﻿using System.Reflection;
-using System.Windows;
-using GlassForge.Shell;
-
 namespace GlassForge.UI;
 
-/// <summary>
-/// Settings window — created on demand when the tray icon is clicked.
-/// Follows the design principle: WPF window is demand-created and fully disposed on close.
-/// </summary>
+using System.Reflection;
+using System.Windows;
+using System.Windows.Media;
+using GlassForge.Core.Settings;
+using GlassForge.Shell;
+
 public partial class MainWindow : Window
 {
-    private readonly CapabilityMap _caps;
-
-    public MainWindow(CapabilityMap caps)
+    public MainWindow(AppSettings settings, CapabilityMap capabilityMap)
     {
         InitializeComponent();
-        _caps = caps;
-        Loaded += OnLoaded;
+
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.1.0";
+        StatusText.Text = $"v{version} — {capabilityMap.BackendName}";
+
+        CapabilityList.ItemsSource = new[]
+        {
+            new CapRow("System Backdrop Type",       capabilityMap.Current.SupportsSystemBackdropType),
+            new CapRow("Caption Color",              capabilityMap.Current.SupportsCaptionColor),
+            new CapRow("Border Color",               capabilityMap.Current.SupportsBorderColor),
+            new CapRow("Immersive Dark Mode",        capabilityMap.Current.SupportsImmersiveDarkMode),
+            new CapRow("Window Composition Attr.",   capabilityMap.Current.SupportsWindowCompositionAttribute),
+        };
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private record CapRow(string Label, bool Available)
     {
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionLabel.Text = $"v{version?.ToString(3) ?? "0.1.0"}";
-
-        if (_caps.IsProbed)
-        {
-            BuildInfo.Text =
-                $"Windows Build: {_caps.BuildNumber}  |  " +
-                $"UBR: {WindowsBuildDetector.GetUpdateBuildRevision()}  |  " +
-                $"Last probe: {_caps.LastProbeTime:yyyy-MM-dd HH:mm:ss} UTC";
-
-            CapabilityInfo.Text =
-                $"SystemBackdrop: {Bool(_caps.SupportsSystemBackdrop)}  " +
-                $"CaptionColor: {Bool(_caps.SupportsCaptionColor)}  " +
-                $"BorderColor: {Bool(_caps.SupportsBorderColor)}  " +
-                $"ImmersiveDark: {Bool(_caps.SupportsImmersiveDarkMode)}  " +
-                $"TaskbarTransparency: {Bool(_caps.SupportsTaskbarTransparency)}";
-        }
-        else
-        {
-            CapabilityInfo.Text = "Capabilities not yet probed.";
-            BuildInfo.Text      = $"Windows Build: {WindowsBuildDetector.GetBuildNumber()}";
-        }
-
-        StatusLabel.Text = "Running in system tray.";
-    }
-
-    private static string Bool(bool v) => v ? "Yes" : "No";
-
-    private void CloseToTray_Click(object sender, RoutedEventArgs e)
-        => Hide();
-
-    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
-    {
-        // Hide instead of close so re-opening from tray is instant
-        e.Cancel = true;
-        Hide();
+        public string Status => Available ? "Available" : "Not available (v0.1.0)";
+        public Brush Color => Available
+            ? Brushes.LightGreen
+            : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x88, 0x88, 0x88));
     }
 }

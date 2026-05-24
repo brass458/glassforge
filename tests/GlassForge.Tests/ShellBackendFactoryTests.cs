@@ -1,58 +1,34 @@
+namespace GlassForge.Tests;
+
 using GlassForge.Shell;
 using GlassForge.Shell.Backends;
 
-namespace GlassForge.Tests;
-
-/// <summary>Task 5 — ShellBackendFactory TDD</summary>
 public class ShellBackendFactoryTests
 {
     [Theory]
-    [InlineData(22000, "ShellBackend_22000")]
-    [InlineData(22620, "ShellBackend_22000")]
-    [InlineData(22621, "ShellBackend_22621")]
-    [InlineData(25999, "ShellBackend_22621")]
-    [InlineData(26100, "ShellBackend_26100")]
-    [InlineData(26200, "ShellBackend_26100")]
-    [InlineData(99999, "ShellBackend_26100")]
-    public void Create_ReturnsCorrectBackend(int build, string expectedTypeName)
+    [InlineData(22621, typeof(ShellBackend_22H2))]
+    [InlineData(22630, typeof(ShellBackend_22H2))]
+    [InlineData(22631, typeof(ShellBackend_23H2))]
+    [InlineData(26099, typeof(ShellBackend_23H2))]
+    [InlineData(26100, typeof(ShellBackend_24H2))]
+    [InlineData(26199, typeof(ShellBackend_24H2))]
+    [InlineData(26200, typeof(ShellBackend_Future))]
+    [InlineData(99999, typeof(ShellBackend_Future))]
+    [InlineData(0,     typeof(ShellBackend_Future))]
+    public void Create_ReturnsCorrectBackendType(int buildNumber, Type expectedType)
     {
-        var backend = ShellBackendFactory.Create(build);
-        Assert.Equal(expectedTypeName, backend.GetType().Name);
+        var backend = ShellBackendFactory.Create(buildNumber);
+        Assert.IsType(expectedType, backend);
     }
 
-    [Fact]
-    public void Create_ForBuildBelowKnownRange_ReturnsFutureBackend()
+    [Theory]
+    [InlineData(22621, "Win11_22H2")]
+    [InlineData(22631, "Win11_23H2")]
+    [InlineData(26100, "Win11_24H2")]
+    [InlineData(99999, "Win11_Future")]
+    public void Create_BackendHasCorrectName(int buildNumber, string expectedName)
     {
-        // Builds below 22000 (pre-Win11) should fall through to ShellBackend_Future
-        var backend = ShellBackendFactory.Create(19041);
-        Assert.Equal("ShellBackend_Future", backend.GetType().Name);
-    }
-
-    [Fact]
-    public void Create_NeverReturnsNull()
-    {
-        foreach (var build in new[] { 0, 10240, 19041, 22000, 22621, 26100, int.MaxValue - 1 })
-        {
-            var backend = ShellBackendFactory.Create(build);
-            Assert.NotNull(backend);
-        }
-    }
-
-    [Fact]
-    public void CreateForCurrentBuild_ReturnsNonNullBackend()
-    {
-        var backend = ShellBackendFactory.CreateForCurrentBuild();
-        Assert.NotNull(backend);
-    }
-
-    [Fact]
-    public void BackendBuildRanges_AreSorted_NoGaps()
-    {
-        // Every realistic Win11 build should map to a non-Future backend
-        foreach (var build in new[] { 22000, 22621, 26100 })
-        {
-            var backend = ShellBackendFactory.Create(build);
-            Assert.NotEqual("ShellBackend_Future", backend.GetType().Name);
-        }
+        var backend = ShellBackendFactory.Create(buildNumber);
+        Assert.Equal(expectedName, backend.Name);
     }
 }
