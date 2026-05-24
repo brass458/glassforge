@@ -1,6 +1,7 @@
 namespace GlassForge.Tests;
 
 using GlassForge.Shell;
+using GlassForge.Shell.Backends;
 
 public class CapabilityMapTests
 {
@@ -49,5 +50,32 @@ public class CapabilityMapTests
         map.Probe(ShellBackendFactory.Create(22631));
         map.Probe(ShellBackendFactory.Create(26100));
         Assert.Equal("Win11_24H2", map.BackendName);
+    }
+
+    [Fact]
+    public async Task Probe_IsThreadSafe_ConcurrentReadsDoNotThrow()
+    {
+        var map = new CapabilityMap();
+        var backend1 = new ShellBackend_22H2();
+        var backend2 = new ShellBackend_23H2();
+        var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+
+        var tasks = Enumerable.Range(0, 8).Select(i => Task.Run(() =>
+        {
+            try
+            {
+                for (int j = 0; j < 100; j++)
+                {
+                    if (j % 20 == 0)
+                        map.Probe(i % 2 == 0 ? backend1 : backend2);
+                    _ = map.Current;
+                    _ = map.BackendName;
+                }
+            }
+            catch (Exception ex) { exceptions.Add(ex); }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+        Assert.Empty(exceptions);
     }
 }

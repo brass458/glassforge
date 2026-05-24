@@ -1,5 +1,6 @@
 namespace GlassForge.Shell;
 
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
@@ -33,7 +34,9 @@ public sealed class UbrWatcher : IDisposable
     {
         _cachedUbr = _readUbr();
         _key = Registry.LocalMachine.OpenSubKey(
-            @"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+            @"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+            ?? throw new InvalidOperationException(
+                "GlassForge could not open the Windows version registry key for UBR monitoring.");
         _waitHandle = new AutoResetEvent(false);
         RegisterNotification();
         ScheduleWait();
@@ -42,12 +45,14 @@ public sealed class UbrWatcher : IDisposable
     private void RegisterNotification()
     {
         if (_key == null || _waitHandle == null || _disposed) return;
-        RegNotifyChangeKeyValue(
+        int result = RegNotifyChangeKeyValue(
             _key.Handle.DangerousGetHandle(),
             false,
             REG_NOTIFY_CHANGE_LAST_SET,
             _waitHandle.SafeWaitHandle.DangerousGetHandle(),
             true);
+        if (result != 0)
+            throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
     private void ScheduleWait()

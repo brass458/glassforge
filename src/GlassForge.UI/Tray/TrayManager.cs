@@ -33,7 +33,11 @@ public class TrayManager : IDisposable
         openItem.Click += (_, _) => OpenSettings();
 
         var exitItem = new MenuItem { Header = "Exit" };
-        exitItem.Click += (_, _) => Application.Current.Shutdown();
+        exitItem.Click += (_, _) =>
+        {
+            _window?.Close();
+            Application.Current.Shutdown();
+        };
 
         _taskbarIcon.ContextMenu = new ContextMenu();
         _taskbarIcon.ContextMenu.Items.Add(openItem);

@@ -9,27 +9,32 @@ public static class DiagnosticsWriter
         ShellCapabilities capabilities, string? outputPath = null)
     {
         var path = outputPath ?? DefaultPath();
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-
-        var data = new
+        try
         {
-            timestamp = DateTime.UtcNow,
-            buildNumber,
-            ubr,
-            backendName,
-            capabilities = new
-            {
-                supportsSystemBackdropType = capabilities.SupportsSystemBackdropType,
-                supportsCaptionColor = capabilities.SupportsCaptionColor,
-                supportsBorderColor = capabilities.SupportsBorderColor,
-                supportsImmersiveDarkMode = capabilities.SupportsImmersiveDarkMode,
-                supportsWindowCompositionAttribute = capabilities.SupportsWindowCompositionAttribute
-            },
-            workingSetBytes = Environment.WorkingSet
-        };
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-        File.WriteAllText(path,
-            JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
+            var data = new
+            {
+                timestamp = DateTime.UtcNow,
+                buildNumber,
+                ubr,
+                backendName,
+                capabilities = new
+                {
+                    supportsSystemBackdropType = capabilities.SupportsSystemBackdropType,
+                    supportsCaptionColor = capabilities.SupportsCaptionColor,
+                    supportsBorderColor = capabilities.SupportsBorderColor,
+                    supportsImmersiveDarkMode = capabilities.SupportsImmersiveDarkMode,
+                    supportsWindowCompositionAttribute = capabilities.SupportsWindowCompositionAttribute
+                },
+                workingSetBytes = Environment.WorkingSet
+            };
+
+            File.WriteAllText(path,
+                JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static string DefaultPath() => Path.Combine(

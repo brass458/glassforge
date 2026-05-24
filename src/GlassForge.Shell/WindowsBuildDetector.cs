@@ -1,5 +1,6 @@
 namespace GlassForge.Shell;
 
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
@@ -33,7 +34,9 @@ public static class WindowsBuildDetector
         {
             dwOSVersionInfoSize = (uint)Marshal.SizeOf<OSVERSIONINFOEX>()
         };
-        RtlGetVersion(ref info);
+        int status = RtlGetVersion(ref info);
+        if (status != 0)
+            throw new Win32Exception("RtlGetVersion failed — cannot determine Windows build number.");
         var build = (int)info.dwBuildNumber;
 
         using var key = Registry.LocalMachine.OpenSubKey(

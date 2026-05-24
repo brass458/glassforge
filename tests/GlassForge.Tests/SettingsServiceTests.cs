@@ -14,7 +14,7 @@ public class SettingsServiceTests : IDisposable
     public void Load_ReturnsDefaults_WhenFileMissing()
     {
         var settings = MakeService().Load();
-        Assert.Equal("Crystal Glass", settings.ActivePresetName);
+        Assert.Equal("GlassForge Default", settings.ActivePresetName);
         Assert.False(settings.SmartTintEnabled);
         Assert.Equal(0.85f, settings.TaskbarOpacity);
         Assert.Equal("Acrylic", settings.TaskbarBackdropMode);
@@ -25,7 +25,7 @@ public class SettingsServiceTests : IDisposable
     {
         File.WriteAllText(Path.Combine(_dir, "config.json"), "not valid json {{{");
         var settings = MakeService().Load();
-        Assert.Equal("Crystal Glass", settings.ActivePresetName);
+        Assert.Equal("GlassForge Default", settings.ActivePresetName);
     }
 
     [Fact]
