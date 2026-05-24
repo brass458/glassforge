@@ -1,0 +1,85 @@
+using System.Text.Json;
+using GlassForge.Core.Models;
+using GlassForge.Core.Settings;
+
+namespace GlassForge.Core.Themes;
+
+/// <summary>
+/// Manages built-in and user-saved theme presets.
+/// User presets are persisted to %APPDATA%\GlassForge\custom-themes.json.
+/// </summary>
+public class ThemePresetService
+{
+    private static readonly string _customPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "GlassForge", "custom-themes.json");
+
+    private static readonly JsonSerializerOptions _jsonOpts = new() { WriteIndented = true };
+
+    private readonly List<ThemePreset> _userPresets = new();
+
+    public ThemePresetService() => LoadUserPresets();
+
+    /// <summary>All presets: built-ins first, then user-saved.</summary>
+    public IReadOnlyList<ThemePreset> AllPresets =>
+        [.. BuiltInThemePresets.All, .. _userPresets];
+
+    /// <summary>Creates a new user preset from the given name and current settings, saves it, and returns it.</summary>
+    public ThemePreset SaveCurrentAsPreset(string name, AppSettings s)
+    {
+        var preset = new ThemePreset
+        {
+            Id                 = Guid.NewGuid().ToString(),
+            Name               = name,
+            IsBuiltIn          = false,
+            ThemeMode          = s.ThemeMode,
+            AccentColorHex     = s.AccentColorHex,
+            TextAccentColorHex = s.TextAccentColorHex,
+            CustomWindowBgHex  = s.CustomWindowBgHex,
+            CustomSurfaceBgHex = s.CustomSurfaceBgHex,
+            CustomSidebarBgHex = s.CustomSidebarBgHex,
+            IsGlassEnabled     = s.IsGlassEnabled,
+            GlassOpacity       = s.GlassOpacity,
+            BackdropBlurMode   = s.BackdropBlurMode,
+            IsSpecularEnabled  = s.IsSpecularEnabled,
+            SpecularIntensity  = s.SpecularIntensity,
+            FontFamily         = s.FontFamily,
+            FontSizeMultiplier = s.FontSizeMultiplier,
+        };
+        _userPresets.Add(preset);
+        PersistUserPresets();
+        return preset;
+    }
+
+    public void DeleteUserPreset(string id)
+    {
+        var idx = _userPresets.FindIndex(p => p.Id == id);
+        if (idx < 0) return;
+        _userPresets.RemoveAt(idx);
+        PersistUserPresets();
+    }
+
+    private void LoadUserPresets()
+    {
+        try
+        {
+            if (!File.Exists(_customPath)) return;
+            var json = File.ReadAllText(_customPath);
+            var list = JsonSerializer.Deserialize<List<ThemePreset>>(json, _jsonOpts);
+            if (list is null) return;
+            foreach (var p in list) p.IsBuiltIn = false;
+            _userPresets.AddRange(list);
+        }
+        catch { /* ignore corrupt file */ }
+    }
+
+    private void PersistUserPresets()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_customPath)!);
+            File.WriteAllText(_customPath, JsonSerializer.Serialize(_userPresets, _jsonOpts));
+        }
+        catch { /* ignore write failures */ }
+    }
+}

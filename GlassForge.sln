@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{EAC7A33D-5FEC-4DFA-9E65-166E8FF354AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlassForge.Core", "src\GlassForge.Core\GlassForge.Core.csproj", "{C1FC62C0-300B-4A0C-8E2A-F7ECAD8BC9BF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlassForge.Shell", "src\GlassForge.Shell\GlassForge.Shell.csproj", "{036A6219-FB0E-4E19-9D27-3FA5567B7EC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlassForge.UI", "src\GlassForge.UI\GlassForge.UI.csproj", "{D8BFFB6F-8D4D-4210-BA3E-BFC458522932}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C58C06DB-412A-44E0-83B4-911F9DDC8701}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlassForge.Tests", "tests\GlassForge.Tests\GlassForge.Tests.csproj", "{96599029-F7C2-4F0E-A097-D511893B970B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C1FC62C0-300B-4A0C-8E2A-F7ECAD8BC9BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1FC62C0-300B-4A0C-8E2A-F7ECAD8BC9BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1FC62C0-300B-4A0C-8E2A-F7ECAD8BC9BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1FC62C0-300B-4A0C-8E2A-F7ECAD8BC9BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{036A6219-FB0E-4E19-9D27-3FA5567B7EC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{036A6219-FB0E-4E19-9D27-3FA5567B7EC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{036A6219-FB0E-4E19-9D27-3FA5567B7EC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{036A6219-FB0E-4E19-9D27-3FA5567B7EC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8BFFB6F-8D4D-4210-BA3E-BFC458522932}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8BFFB6F-8D4D-4210-BA3E-BFC458522932}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8BFFB6F-8D4D-4210-BA3E-BFC458522932}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8BFFB6F-8D4D-4210-BA3E-BFC458522932}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96599029-F7C2-4F0E-A097-D511893B970B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96599029-F7C2-4F0E-A097-D511893B970B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96599029-F7C2-4F0E-A097-D511893B970B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96599029-F7C2-4F0E-A097-D511893B970B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C1FC62C0-300B-4A0C-8E2A-F7ECAD8BC9BF} = {EAC7A33D-5FEC-4DFA-9E65-166E8FF354AF}
+		{036A6219-FB0E-4E19-9D27-3FA5567B7EC6} = {EAC7A33D-5FEC-4DFA-9E65-166E8FF354AF}
+		{D8BFFB6F-8D4D-4210-BA3E-BFC458522932} = {EAC7A33D-5FEC-4DFA-9E65-166E8FF354AF}
+		{96599029-F7C2-4F0E-A097-D511893B970B} = {C58C06DB-412A-44E0-83B4-911F9DDC8701}
+	EndGlobalSection
+EndGlobal
