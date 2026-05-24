@@ -1,0 +1,20 @@
+# Build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# .NET
+*.nupkg
+*.snupkg
+project.lock.json
+.packages/
+
+# User-specific
+*.rsuser
+.idea/
+*.DotSettings.user
+
+# Publish
+publish/
