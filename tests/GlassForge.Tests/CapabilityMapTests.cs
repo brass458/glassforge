@@ -1,38 +1,51 @@
 namespace GlassForge.Tests;
 
+using GlassForge.Core.Settings;
 using GlassForge.Shell;
+using GlassForge.Shell.Abstractions;
 using GlassForge.Shell.Backends;
 
 public class CapabilityMapTests
 {
+    private class TestBackend : IShellBackend
+    {
+        private readonly ShellCapabilities _caps;
+        public TestBackend(ShellCapabilities caps) => _caps = caps;
+        public string Name => "Test";
+        public int MinBuild => 0;
+        public int MaxBuild => int.MaxValue;
+        public ShellCapabilities ProbeCapabilities() => _caps;
+        public void ApplyTaskbarEffect(IntPtr hwnd, AppSettings settings) { }
+        public void RemoveTaskbarEffect(IntPtr hwnd) { }
+    }
+
     [Fact]
     public void Current_IsNotNullAfterProbe()
     {
         var map = new CapabilityMap();
-        map.Probe(ShellBackendFactory.Create(22631));
+        map.Probe(new TestBackend(new ShellCapabilities()));
         Assert.NotNull(map.Current);
     }
 
     [Fact]
-    public void Current_AllFalseInV010()
+    public void Current_ReflectsCapabilitiesReturnedByBackend()
     {
         var map = new CapabilityMap();
-        map.Probe(ShellBackendFactory.Create(22631));
-        Assert.False(map.Current.SupportsSystemBackdropType);
+        var caps = new ShellCapabilities { SupportsSystemBackdropType = true };
+        map.Probe(new TestBackend(caps));
+        Assert.True(map.Current.SupportsSystemBackdropType);
         Assert.False(map.Current.SupportsCaptionColor);
-        Assert.False(map.Current.SupportsBorderColor);
-        Assert.False(map.Current.SupportsImmersiveDarkMode);
-        Assert.False(map.Current.SupportsWindowCompositionAttribute);
     }
 
     [Fact]
     public void Probe_UpdatesCurrentOnSecondCall()
     {
         var map = new CapabilityMap();
-        map.Probe(ShellBackendFactory.Create(22631));
+        map.Probe(new TestBackend(new ShellCapabilities()));
         var first = map.Current;
-        map.Probe(ShellBackendFactory.Create(26100));
+        map.Probe(new TestBackend(new ShellCapabilities { SupportsBorderColor = true }));
         Assert.NotSame(first, map.Current);
+        Assert.True(map.Current.SupportsBorderColor);
     }
 
     [Fact]
@@ -56,8 +69,8 @@ public class CapabilityMapTests
     public async Task Probe_IsThreadSafe_ConcurrentReadsDoNotThrow()
     {
         var map = new CapabilityMap();
-        var backend1 = new ShellBackend_22H2();
-        var backend2 = new ShellBackend_23H2();
+        var backend1 = new TestBackend(new ShellCapabilities());
+        var backend2 = new TestBackend(new ShellCapabilities { SupportsSystemBackdropType = true });
         var exceptions = new System.Collections.Concurrent.ConcurrentBag<Exception>();
 
         var tasks = Enumerable.Range(0, 8).Select(i => Task.Run(() =>
