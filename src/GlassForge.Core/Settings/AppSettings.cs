@@ -6,4 +6,5 @@ public class AppSettings
     public bool SmartTintEnabled { get; set; } = false;
     public float TaskbarOpacity { get; set; } = 0.85f;
     public string TaskbarBackdropMode { get; set; } = "Acrylic";
+    public bool TaskbarEffectEnabled { get; set; } = true;
 }

@@ -51,4 +51,16 @@ public class SettingsServiceTests : IDisposable
         MakeService().Save(new AppSettings());
         Assert.False(File.Exists(Path.Combine(_dir, "config.tmp")));
     }
+
+    [Fact]
+    public void TaskbarEffectEnabled_DefaultsTrueAndRoundTrips()
+    {
+        var service = MakeService();
+        var defaults = service.Load();
+        Assert.True(defaults.TaskbarEffectEnabled);
+
+        service.Save(new AppSettings { TaskbarEffectEnabled = false });
+        var loaded = service.Load();
+        Assert.False(loaded.TaskbarEffectEnabled);
+    }
 }
