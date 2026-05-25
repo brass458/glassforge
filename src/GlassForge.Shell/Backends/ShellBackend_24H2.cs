@@ -26,12 +26,13 @@ public sealed class ShellBackend_24H2 : IShellBackend
             "Blur"    => NativeMethods.AccentState.ACCENT_ENABLE_BLURBEHIND,
             _         => NativeMethods.AccentState.ACCENT_DISABLED,
         };
-        int gradient = (int)(settings.TaskbarOpacity * 255) << 24;
+        bool isAcrylic = state == NativeMethods.AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
+        int gradient = isAcrylic ? (int)(settings.TaskbarOpacity * 255) << 24 : 0;
 
         if (_testSwca != null)
             _testSwca(state, gradient);
         else
-            NativeMethods.ApplyAccentPolicy(hwnd, state, gradient);
+            NativeMethods.ApplyAccentPolicy(hwnd, state, gradient, isAcrylic ? 2 : 0);
     }
 
     public void RemoveTaskbarEffect(IntPtr hwnd)

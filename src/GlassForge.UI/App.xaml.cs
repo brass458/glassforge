@@ -14,6 +14,7 @@ public partial class App : Application
     private TaskbarEffectService? _taskbarEffectService;
     private IShellBackend? _currentBackend;
     private AppSettings? _currentSettings;
+    private System.Windows.Threading.DispatcherTimer? _effectTimer;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -54,10 +55,22 @@ public partial class App : Application
 
         if (_currentSettings.TaskbarEffectEnabled)
             _taskbarEffectService.Apply(_currentBackend, _currentSettings);
+
+        _effectTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _effectTimer.Tick += (_, _) =>
+        {
+            if (_currentSettings?.TaskbarEffectEnabled == true && _currentBackend != null)
+                _taskbarEffectService?.Apply(_currentBackend, _currentSettings);
+        };
+        _effectTimer.Start();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _effectTimer?.Stop();
         if (_currentBackend != null)
             _taskbarEffectService?.Remove(_currentBackend);
         _ubrWatcher?.Dispose();

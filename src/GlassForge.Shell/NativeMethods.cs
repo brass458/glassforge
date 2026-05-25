@@ -70,12 +70,12 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     internal static extern bool DestroyWindow(IntPtr hWnd);
 
-    internal static void ApplyAccentPolicy(IntPtr hwnd, AccentState state, int gradientColor)
+    internal static void ApplyAccentPolicy(IntPtr hwnd, AccentState state, int gradientColor, int accentFlags = 0)
     {
         var policy = new ACCENT_POLICY
         {
             AccentState = state,
-            AccentFlags = 2,
+            AccentFlags = accentFlags,
             GradientColor = gradientColor,
             AnimationId = 0,
         };
