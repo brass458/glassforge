@@ -45,6 +45,7 @@ public partial class MainWindow : Window
             new CapRow("Border Color",              capabilityMap.Current.SupportsBorderColor),
             new CapRow("Immersive Dark Mode",       capabilityMap.Current.SupportsImmersiveDarkMode),
             new CapRow("Window Composition Attr.",  capabilityMap.Current.SupportsWindowCompositionAttribute),
+            new CapRow("System Transparency",       capabilityMap.Current.SupportsSystemTransparency),
         };
 
         EffectEnabled.Checked   += (_, _) => OnSettingChanged();

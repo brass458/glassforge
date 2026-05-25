@@ -32,7 +32,7 @@ public sealed class ShellBackend_Future : IShellBackend
         if (_testSwca != null)
             _testSwca(state, gradient);
         else
-            NativeMethods.ApplyAccentPolicy(hwnd, state, gradient, isAcrylic ? 2 : 0);
+            NativeMethods.ApplyAccentPolicy(hwnd, state, gradient);
     }
 
     public void RemoveTaskbarEffect(IntPtr hwnd)

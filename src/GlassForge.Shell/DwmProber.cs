@@ -2,6 +2,7 @@ namespace GlassForge.Shell;
 
 using System.Runtime.InteropServices;
 using GlassForge.Shell.Abstractions;
+using Microsoft.Win32;
 
 internal static class DwmProber
 {
@@ -22,7 +23,8 @@ internal static class DwmProber
 
         try
         {
-            return ProbeWithSeams(hwnd, NativeMethods.DwmGetWindowAttribute, ProbeSwca);
+            var caps = ProbeWithSeams(hwnd, NativeMethods.DwmGetWindowAttribute, ProbeSwca);
+            return caps with { SupportsSystemTransparency = ProbeSystemTransparency() };
         }
         finally
         {
@@ -57,5 +59,16 @@ internal static class DwmProber
     {
         NativeMethods.ApplyAccentPolicy(hwnd, NativeMethods.AccentState.ACCENT_DISABLED, 0);
         return true;  // SetWindowCompositionAttribute exists on all Win11 builds we target
+    }
+
+    private static bool ProbeSystemTransparency()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            return (int)(key?.GetValue("EnableTransparency") ?? 1) != 0;
+        }
+        catch { return true; }
     }
 }
