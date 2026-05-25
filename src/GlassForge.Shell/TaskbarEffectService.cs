@@ -22,9 +22,17 @@ public class TaskbarEffectService
         if (!_isWindow(hwnd)) return false;
 
         if (!settings.TaskbarEffectEnabled)
+        {
             backend.RemoveTaskbarEffect(hwnd);
+            foreach (var child in VisibleChildren(hwnd))
+                backend.RemoveTaskbarEffect(child);
+        }
         else
+        {
             backend.ApplyTaskbarEffect(hwnd, settings);
+            foreach (var child in VisibleChildren(hwnd))
+                backend.ApplyTaskbarEffect(child, settings);
+        }
 
         return true;
     }
@@ -32,7 +40,21 @@ public class TaskbarEffectService
     public void Remove(IShellBackend backend)
     {
         var hwnd = _findWindow("Shell_TrayWnd", null);
-        if (_isWindow(hwnd))
-            backend.RemoveTaskbarEffect(hwnd);
+        if (!_isWindow(hwnd)) return;
+
+        backend.RemoveTaskbarEffect(hwnd);
+        foreach (var child in VisibleChildren(hwnd))
+            backend.RemoveTaskbarEffect(child);
+    }
+
+    private static IEnumerable<IntPtr> VisibleChildren(IntPtr parent)
+    {
+        var child = NativeMethods.FindWindowEx(parent, IntPtr.Zero, null, null);
+        while (child != IntPtr.Zero)
+        {
+            if (NativeMethods.IsWindowVisible(child))
+                yield return child;
+            child = NativeMethods.FindWindowEx(parent, child, null, null);
+        }
     }
 }

@@ -58,8 +58,14 @@ internal static class NativeMethods
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     internal static extern IntPtr FindWindow(string lpClassName, string? lpWindowName);
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    internal static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string? lpszClass, string? lpszWindow);
+
     [DllImport("user32.dll")]
     internal static extern bool IsWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    internal static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     internal static extern IntPtr CreateWindowEx(
