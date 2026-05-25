@@ -48,13 +48,17 @@
                       FontSize="12" Padding="6,4"
                       Background="#2D2D2D" Foreground="#CCCCCC"
                       BorderBrush="#444444">
-                <ComboBox.Resources>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#2D2D2D"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="#CCCCCC"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#3D5A80"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
-                    <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#2D2D2D"/>
-                </ComboBox.Resources>
+                <ComboBox.ItemContainerStyle>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Foreground" Value="#CCCCCC"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" Value="#3D5A80"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ComboBox.ItemContainerStyle>
                 <ComboBoxItem Content="Acrylic" Tag="Acrylic"/>
                 <ComboBoxItem Content="Blur" Tag="Blur"/>
                 <ComboBoxItem Content="None" Tag="None"/>
@@ -71,7 +75,8 @@
             <TextBlock Grid.Column="0" Text="Opacity"
                        FontSize="12" Foreground="#CCCCCC" VerticalAlignment="Center"/>
             <Slider Grid.Column="1" x:Name="OpacitySlider"
-                    Minimum="0" Maximum="1" TickFrequency="0.05"
+                    Minimum="0" Maximum="100" TickFrequency="5"
+                    SmallChange="5" LargeChange="10"
                     IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="2" x:Name="OpacityLabel"
                        FontSize="12" Foreground="#CCCCCC"

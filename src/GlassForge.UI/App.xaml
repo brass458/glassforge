@@ -7,6 +7,12 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Tray/TrayResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}"          Color="#2D2D2D"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}"      Color="#CCCCCC"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}"     Color="#CCCCCC"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"       Color="#3D5A80"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"   Color="White"/>
+            <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}"         Color="#2D2D2D"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

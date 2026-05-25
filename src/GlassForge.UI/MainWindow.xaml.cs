@@ -24,7 +24,7 @@ public partial class MainWindow : Window
         StatusText.Text = $"v{version} — {capabilityMap.BackendName}";
 
         EffectEnabled.IsChecked = settings.TaskbarEffectEnabled;
-        OpacitySlider.Value = settings.TaskbarOpacity;
+        OpacitySlider.Value = settings.TaskbarOpacity * 100;
         OpacityLabel.Text = $"{(int)(settings.TaskbarOpacity * 100)}%";
         UpdateControlsEnabled(settings.TaskbarEffectEnabled);
 
@@ -52,7 +52,7 @@ public partial class MainWindow : Window
         BackdropMode.SelectionChanged += (_, _) => OnSettingChanged();
         OpacitySlider.ValueChanged    += (_, _) =>
         {
-            OpacityLabel.Text = $"{(int)(OpacitySlider.Value * 100)}%";
+            OpacityLabel.Text = $"{(int)OpacitySlider.Value}%";
             OnSettingChanged();
         };
 
@@ -64,7 +64,7 @@ public partial class MainWindow : Window
         if (_loading) return;
 
         _settings.TaskbarEffectEnabled = EffectEnabled.IsChecked == true;
-        _settings.TaskbarOpacity = (float)OpacitySlider.Value;
+        _settings.TaskbarOpacity = (float)(OpacitySlider.Value / 100.0);
         _settings.TaskbarBackdropMode =
             (BackdropMode.SelectedItem as ComboBoxItem)?.Tag as string ?? "Acrylic";
 
